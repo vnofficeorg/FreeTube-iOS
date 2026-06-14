@@ -151,9 +151,16 @@ class VideoCell: UICollectionViewCell {
             durationLabel.text = ""
         }
         
-        let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        viewsLabel.text = formatter.string(for: item.watchedAt) ?? ""
+        let elapsed = Date().timeIntervalSince(item.watchedAt)
+        if elapsed < 60 {
+            viewsLabel.text = "Vừa xem"
+        } else if elapsed < 3600 {
+            viewsLabel.text = "\(Int(elapsed / 60)) phút trước"
+        } else if elapsed < 86400 {
+            viewsLabel.text = "\(Int(elapsed / 3600)) giờ trước"
+        } else {
+            viewsLabel.text = "\(Int(elapsed / 86400)) ngày trước"
+        }
         
         thumbnailImageView.loadImage(from: item.thumbnailURL)
     }
