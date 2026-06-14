@@ -1,0 +1,55 @@
+name: Build FreeTube IPA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Select Xcode version
+      run: |
+        sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        xcodebuild -version
+    
+    - name: Build archive (unsigned)
+      run: |
+        xcodebuild archive \
+          -project FreeTube.xcodeproj \
+          -scheme FreeTube \
+          -sdk iphoneos \
+          -configuration Release \
+          -archivePath $RUNNER_TEMP/FreeTube.xcarchive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          IPHONEOS_DEPLOYMENT_TARGET=12.0 \
+          ONLY_ACTIVE_ARCH=NO
+    
+    - name: Create IPA
+      run: |
+        mkdir -p $RUNNER_TEMP/Payload
+        cp -r $RUNNER_TEMP/FreeTube.xcarchive/Products/Applications/FreeTube.app $RUNNER_TEMP/Payload/
+        cd $RUNNER_TEMP && zip -r FreeTube.ipa Payload
+    
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: FreeTube-IPA
+        path: ${{ runner.temp }}/FreeTube.ipa
+        retention-days: 90
+    
+    - name: Create Release (on tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ${{ runner.temp }}/FreeTube.ipa
+        generate_release_notes: true
