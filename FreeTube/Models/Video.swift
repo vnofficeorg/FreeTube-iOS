@@ -219,12 +219,12 @@ struct InvidiousInstance: Codable {
     let region: String?
     
     static let defaultInstances: [InvidiousInstance] = [
+        InvidiousInstance(name: "inv.nadeko.net", url: "https://inv.nadeko.net", region: "CL"),
+        InvidiousInstance(name: "invidious.nerdvpn.de", url: "https://invidious.nerdvpn.de", region: "UA"),
+        InvidiousInstance(name: "yt.chocolatemoo53.com", url: "https://yt.chocolatemoo53.com", region: "US"),
+        InvidiousInstance(name: "invidious.f5.si", url: "https://invidious.f5.si", region: "JP"),
+        InvidiousInstance(name: "inv.thepixora.com", url: "https://inv.thepixora.com", region: "CA"),
+        InvidiousInstance(name: "invidious.tiekoetter.com", url: "https://invidious.tiekoetter.com", region: "DE"),
         InvidiousInstance(name: "yewtu.be", url: "https://yewtu.be", region: "NL"),
-        InvidiousInstance(name: "vid.puffyan.us", url: "https://vid.puffyan.us", region: "US"),
-        InvidiousInstance(name: "invidious.snopyta.org", url: "https://invidious.snopyta.org", region: "FI"),
-        InvidiousInstance(name: "invidious.kavin.rocks", url: "https://invidious.kavin.rocks", region: "IN"),
-        InvidiousInstance(name: "inv.riverside.rocks", url: "https://inv.riverside.rocks", region: "US"),
-        InvidiousInstance(name: "invidious.namazso.eu", url: "https://invidious.namazso.eu", region: "HU"),
-        InvidiousInstance(name: "invidious.privacyredirect.com", url: "https://invidious.privacyredirect.com", region: "FI"),
     ]
 }

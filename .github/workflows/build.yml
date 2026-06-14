@@ -9,44 +9,121 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
-    
+    runs-on: macos-15
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Select Xcode version
       run: |
-        sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        # List available Xcode versions for debugging
+        ls /Applications/ | grep Xcode
+        # Use Xcode 16.x (available on macos-15)
+        sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
         xcodebuild -version
-    
-    - name: Build archive (unsigned)
+        xcodebuild -showsdks | grep iphoneos
+
+    - name: Build app (unsigned)
       run: |
-        xcodebuild archive \
+        xcodebuild clean build \
           -project FreeTube.xcodeproj \
           -scheme FreeTube \
           -sdk iphoneos \
           -configuration Release \
-          -archivePath $RUNNER_TEMP/FreeTube.xcarchive \
-          CODE_SIGN_IDENTITY="" \
+          -derivedDataPath $RUNNER_TEMP/DerivedData \
+          CODE_SIGN_IDENTITY="-" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
+          AD_HOC_CODE_SIGNING_ALLOWED=YES \
           IPHONEOS_DEPLOYMENT_TARGET=12.0 \
-          ONLY_ACTIVE_ARCH=NO
-    
-    - name: Create IPA
+          ONLY_ACTIVE_ARCH=NO \
+          ARCHS="arm64 armv7" \
+          VALID_ARCHS="arm64 armv7" \
+          ENABLE_BITCODE=NO \
+          STRIP_INSTALLED_PRODUCT=NO \
+          COPY_PHASE_STRIP=NO \
+          STRIP_SWIFT_SYMBOLS=NO
+
+    - name: Create proper IPA with entitlements
       run: |
+        # Find the built .app
+        APP_PATH=$(find $RUNNER_TEMP/DerivedData -name "FreeTube.app" -type d | head -1)
+        echo "Found app at: $APP_PATH"
+
+        if [ -z "$APP_PATH" ]; then
+          echo "ERROR: FreeTube.app not found!"
+          find $RUNNER_TEMP/DerivedData -name "*.app" -type d
+          exit 1
+        fi
+
+        # Verify binary architectures
+        echo "=== Binary architectures ==="
+        lipo -info "$APP_PATH/FreeTube" || true
+        file "$APP_PATH/FreeTube" || true
+
+        # Ensure Info.plist has MinimumOSVersion (required for Sideloadly)
+        /usr/libexec/PlistBuddy -c "Add :MinimumOSVersion string 12.0" "$APP_PATH/Info.plist" 2>/dev/null || \
+        /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 12.0" "$APP_PATH/Info.plist"
+
+        # Ensure CFBundleSupportedPlatforms is set
+        /usr/libexec/PlistBuddy -c "Add :CFBundleSupportedPlatforms array" "$APP_PATH/Info.plist" 2>/dev/null || true
+        /usr/libexec/PlistBuddy -c "Delete :CFBundleSupportedPlatforms" "$APP_PATH/Info.plist" 2>/dev/null || true
+        /usr/libexec/PlistBuddy -c "Add :CFBundleSupportedPlatforms array" "$APP_PATH/Info.plist"
+        /usr/libexec/PlistBuddy -c "Add :CFBundleSupportedPlatforms:0 string iPhoneOS" "$APP_PATH/Info.plist"
+
+        # Ensure DTPlatformName
+        /usr/libexec/PlistBuddy -c "Add :DTPlatformName string iphoneos" "$APP_PATH/Info.plist" 2>/dev/null || \
+        /usr/libexec/PlistBuddy -c "Set :DTPlatformName iphoneos" "$APP_PATH/Info.plist"
+
+        # Remove any _CodeSignature that might interfere with re-signing
+        rm -rf "$APP_PATH/_CodeSignature"
+
+        # Remove embedded.mobileprovision if exists (Sideloadly will add its own)
+        rm -f "$APP_PATH/embedded.mobileprovision"
+
+        # Create a minimal entitlements file for reference
+        cat > "$RUNNER_TEMP/entitlements.plist" << 'ENTITLEMENTS'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>application-identifier</key>
+            <string>*</string>
+            <key>get-task-allow</key>
+            <true/>
+        </dict>
+        </plist>
+        ENTITLEMENTS
+
+        # Re-sign with ad-hoc signature (makes Sideloadly's re-signing work properly)
+        codesign --force --sign - --entitlements "$RUNNER_TEMP/entitlements.plist" "$APP_PATH"
+
+        # Create proper Payload structure
         mkdir -p $RUNNER_TEMP/Payload
-        cp -r $RUNNER_TEMP/FreeTube.xcarchive/Products/Applications/FreeTube.app $RUNNER_TEMP/Payload/
-        cd $RUNNER_TEMP && zip -r FreeTube.ipa Payload
-    
+        cp -r "$APP_PATH" $RUNNER_TEMP/Payload/
+
+        # Verify structure
+        echo "=== IPA Structure ==="
+        ls -la $RUNNER_TEMP/Payload/FreeTube.app/
+        echo "=== Info.plist check ==="
+        /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$RUNNER_TEMP/Payload/FreeTube.app/Info.plist" || true
+        /usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" "$RUNNER_TEMP/Payload/FreeTube.app/Info.plist" || true
+        /usr/libexec/PlistBuddy -c "Print :CFBundleSupportedPlatforms" "$RUNNER_TEMP/Payload/FreeTube.app/Info.plist" || true
+
+        # Create IPA (zip with proper structure)
+        cd $RUNNER_TEMP && zip -r -9 FreeTube.ipa Payload
+
+        echo "=== IPA created ==="
+        ls -la $RUNNER_TEMP/FreeTube.ipa
+
     - name: Upload IPA artifact
       uses: actions/upload-artifact@v4
       with:
         name: FreeTube-IPA
         path: ${{ runner.temp }}/FreeTube.ipa
         retention-days: 90
-    
+
     - name: Create Release (on tag)
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
