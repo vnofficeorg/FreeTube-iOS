@@ -40,6 +40,7 @@ jobs:
           ARCHS="arm64" \
           EXCLUDED_ARCHS="armv7" \
           ENABLE_BITCODE=NO \
+          ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO \
           STRIP_INSTALLED_PRODUCT=NO \
           COPY_PHASE_STRIP=NO \
           STRIP_SWIFT_SYMBOLS=NO
@@ -61,6 +62,13 @@ jobs:
         lipo -info "$APP_PATH/FreeTube" || true
         file "$APP_PATH/FreeTube" || true
 
+        # CRITICAL: Remove embedded Swift dylibs from Xcode 16
+        # iOS 12.5.7 (>= 12.2) has built-in ABI-stable Swift runtime
+        # Xcode 16 Swift dylibs cause signature verification failure
+        echo "=== Removing embedded Swift frameworks ==="
+        rm -rf "$APP_PATH/Frameworks"
+        echo "Frameworks directory removed"
+
         # Ensure Info.plist has MinimumOSVersion (required for Sideloadly)
         /usr/libexec/PlistBuddy -c "Add :MinimumOSVersion string 12.0" "$APP_PATH/Info.plist" 2>/dev/null || \
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 12.0" "$APP_PATH/Info.plist"
@@ -75,28 +83,11 @@ jobs:
         /usr/libexec/PlistBuddy -c "Add :DTPlatformName string iphoneos" "$APP_PATH/Info.plist" 2>/dev/null || \
         /usr/libexec/PlistBuddy -c "Set :DTPlatformName iphoneos" "$APP_PATH/Info.plist"
 
-        # Remove any _CodeSignature that might interfere with re-signing
+        # Remove ALL code signatures - let signing tool handle from scratch
         rm -rf "$APP_PATH/_CodeSignature"
-
-        # Remove embedded.mobileprovision if exists (Sideloadly will add its own)
         rm -f "$APP_PATH/embedded.mobileprovision"
 
-        # Create a minimal entitlements file for reference
-        cat > "$RUNNER_TEMP/entitlements.plist" << 'ENTITLEMENTS'
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>application-identifier</key>
-            <string>*</string>
-            <key>get-task-allow</key>
-            <true/>
-        </dict>
-        </plist>
-        ENTITLEMENTS
-
-        # Re-sign with ad-hoc signature (makes Sideloadly's re-signing work properly)
-        codesign --force --sign - --entitlements "$RUNNER_TEMP/entitlements.plist" "$APP_PATH"
+        # Do NOT ad-hoc sign - leave completely unsigned for signing tools
 
         # Create proper Payload structure
         mkdir -p $RUNNER_TEMP/Payload
