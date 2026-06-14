@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-15
 
     steps:
     - name: Checkout code
@@ -17,10 +17,9 @@ jobs:
 
     - name: Select Xcode version
       run: |
-        # List available Xcode versions for debugging
+        # List available Xcode versions
         ls /Applications/ | grep Xcode
-        # Use Xcode 14.3.1 - last version with proper iOS 12 support
-        sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode_14.2.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        # Use default Xcode (16.x) - still supports iOS 12 deployment target
         xcodebuild -version
         xcodebuild -showsdks | grep iphoneos
 
@@ -38,7 +37,8 @@ jobs:
           AD_HOC_CODE_SIGNING_ALLOWED=YES \
           IPHONEOS_DEPLOYMENT_TARGET=12.0 \
           ONLY_ACTIVE_ARCH=NO \
-          ARCHS="arm64 armv7" \
+          ARCHS="arm64" \
+          EXCLUDED_ARCHS="armv7" \
           ENABLE_BITCODE=NO \
           STRIP_INSTALLED_PRODUCT=NO \
           COPY_PHASE_STRIP=NO \
