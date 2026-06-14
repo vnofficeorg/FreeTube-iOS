@@ -86,7 +86,7 @@ class SettingsViewController: UITableViewController {
         case 0:
             selectedIndex = indexPath.row
             InvidiousAPI.shared.currentInstanceURL = instances[indexPath.row].url
-            tableView.reloadSection(0, with: .automatic)
+            tableView.reloadSections(IndexSet(integer: 0), with: .automatic)
             
             // Show confirmation
             let alert = UIAlertController(
