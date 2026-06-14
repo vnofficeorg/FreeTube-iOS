@@ -21,7 +21,6 @@
 		AA000001000000000000000C /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000001000000000000000C; };
 		AA000001000000000000000D /* HistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000001000000000000000D; };
 		AA000001000000000000000E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB000001000000000000000E; };
-		AA000001000000000000000F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = BB000001000000000000000F; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,7 +38,6 @@
 		BB000001000000000000000C /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		BB000001000000000000000D /* HistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewController.swift; sourceTree = "<group>"; };
 		BB000001000000000000000E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		BB000001000000000000000F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		BB0000010000000000000010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CC0000010000000000000001 /* FreeTube.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FreeTube.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -71,7 +69,6 @@
 				EE0000010000000000000004 /* Services */,
 				EE0000010000000000000005 /* Views */,
 				BB000001000000000000000E /* Assets.xcassets */,
-				BB000001000000000000000F /* LaunchScreen.storyboard */,
 				BB0000010000000000000010 /* Info.plist */,
 			);
 			path = FreeTube;
@@ -177,7 +174,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA000001000000000000000E /* Assets.xcassets in Resources */,
-				AA000001000000000000000F /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
